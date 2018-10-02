@@ -19,6 +19,7 @@ class LoadCsv {
     public $UPDATE=0;
 
     public $MASS_FIELD=array();
+    public $field_html_buffer='';
     private $_csv_file = null;
     private $error = array();
     private $array_line_full = array();
@@ -139,7 +140,7 @@ class LoadCsv {
     }
     function getStartTable()
     {
-        return  '<table>';
+        return  '<table class="table_csv">';
     }
     function getEndTable()
     {
@@ -150,9 +151,9 @@ class LoadCsv {
     {
         return '<tr>'.$content.'</tr>';
     }
-    function getTdTable($content)
+    function getTdTable($content, $class='')
     {
-        return '<td style="vertical-align: top;">'.$content.'</td>';
+        return '<td class="'.$class.'" style="vertical-align: top;">'.$content.'</td>';
     }
 
     //выводит все поля из конструктора
@@ -229,8 +230,8 @@ class LoadCsv {
         $html.=$this->getEndTable();
 
      //  debug($this->MASS_FIELD);
-        echo '<h1>Поля в выгрузке</h1>';
-        echo $html;
+        $this->field_html_buffer.= '<h1>Поля в выгрузке</h1>';
+        $this->field_html_buffer.= $html;
         /*
         if(self::VERIFICATION==1) {
             // проверка на сосответствие выгрузки
@@ -518,7 +519,7 @@ class LoadCsv {
         $row.=$this->getTdTable('Артикул');
         $row.=$this->getTdTable('Название');
         $row.=$this->getTdTable('Штрих-код');
-        $row.=$this->getTdTable('Свойства статусов');
+        $row.=$this->getTdTable('Свойства статусов' );
         $html.=$this->getRowTable($row);
 
         foreach ($this->array_line_full as $key=>$value){
@@ -544,7 +545,7 @@ class LoadCsv {
 
             $row.=$this->getTdTable($SCOD);
             $text=$this->getProverkaTovara($SCOD ,$value);// по штрихкоду
-            $row.=$this->getTdTable($text);
+            $row.=$this->getTdTable($text,'svoistva');
             $html.=$this->getRowTable($row);
         }
         $html.=$this->getEndTable();
@@ -565,6 +566,7 @@ switch ($action){
         $csv->UPDATE=0;
         $csv->loadCSV();
         echo $csv->getHtmlProverka();
+        echo $csv->field_html_buffer;
        // echo $csv->getHtmlMassFields();
         break;
     case 'update':
@@ -572,10 +574,28 @@ switch ($action){
         $csv->UPDATE=1;
         $csv->loadCSV();
         echo $csv->getHtmlProverka();
+        echo $csv->field_html_buffer;
         break;
 }
 
 ?>
+
+    <style>
+        .table_csv .svoistva{
+            width:500px;
+
+        }
+        .table_csv {
+            width:100%;
+            border-spacing: 0px;
+            border-collapse: collapse;
+        }
+        .table_csv td{
+            border: 1px solid #d6d7d7;
+            padding: 3px 5px;
+        }
+
+    </style>
 
     <script>
         jQuery(document).ready(function() {
