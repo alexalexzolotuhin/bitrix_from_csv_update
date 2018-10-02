@@ -3,12 +3,12 @@
 require($_SERVER["DOCUMENT_ROOT"]."/bitrix/header.php");
 CModule::IncludeModule('iblock');
 CModule::IncludeModule("catalog");
-
+/*
 function debug($var){
     echo '<pre>';
     print_r($var);
     echo '</pre>';
-}
+} */
 
 
 
