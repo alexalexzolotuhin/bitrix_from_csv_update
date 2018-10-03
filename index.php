@@ -1,17 +1,10 @@
 <?php
 //require($_SERVER["DOCUMENT_ROOT"]."/bitrix/modules/main/include/prolog_before.php");
 require($_SERVER["DOCUMENT_ROOT"]."/bitrix/header.php");
+
+
 CModule::IncludeModule('iblock');
 CModule::IncludeModule("catalog");
-/*
-function debug($var){
-    echo '<pre>';
-    print_r($var);
-    echo '</pre>';
-} */
-
-
-
 
 class LoadCsv {
     const IBLOCK_ID=4;//id инфоблока
@@ -81,6 +74,7 @@ class LoadCsv {
             'Детальное описание'=>array('name'=>'DETAIL_TEXT', 'type'=>'other'), // в формате Html
             'РРЦ'=>array('name'=>'RRC', 'type'=>'other' ),//заменено
             'Google Merchant category'=>array('name'=>'GOOGLE_MERCHANT_CATEGORY'),
+            'Фото'=>array('name'=>'PHOTO', 'type'=>'other'),
         );
 
         //получаем свойства по символьному коду, для того что бы занать, в каких полях список!!!
@@ -260,7 +254,7 @@ class LoadCsv {
         $ret=false;
         $arSort = array('SORT' => 'ASC', 'ID' => 'DESC');
         $arFilter = array('ACTIVE' => 'Y', 'PROPERTY_CML2_BAR_CODE'=>$SKOD, 'IBLOCK_ID' => self::IBLOCK_ID);
-        $arSelect = array('ID', 'NAME', 'DETAIL_PAGE_URL' ,'DETAIL_TEXT' ,'IBLOCK_SECTION_ID' ,'PROPERTY_*');
+        $arSelect = array('ID', 'NAME', 'DETAIL_PAGE_URL' ,'DETAIL_TEXT' ,'IBLOCK_SECTION_ID' , 'DETAIL_PICTURE','PROPERTY_*');
         $res = CIBlockElement::getList($arSort, $arFilter, false, array( 'nPageSize' => 1), $arSelect);
         if ($row = $res->GetNextElement()) {
             // debug($row);
@@ -462,6 +456,62 @@ class LoadCsv {
                             $mass_success[] = $name_row.'- Выставлена цена:'.$value;
                         }
                     }
+
+                    if($name_property=='PHOTO'){
+                        $mass_section=explode("|",$value);
+                        //debug($mass_section);
+                        //проверяем
+
+                        $mass_img_more=array();
+                        $mass_img_more_remove=array();
+                        foreach ($mass_section as $key=>$img){
+                            $full_path='/1c/img_new/'.$img;
+                            $full_copy_path='/1c/img_loaded/'.$img;
+                            if($key==0){
+                                //проверяем, загружаем перрое фото
+                                if(empty($data['DATA']['DETAIL_PICTURE'])){
+                                    $make_file=CFile::MakeFileArray($_SERVER["DOCUMENT_ROOT"].$full_path);
+                                    if(!empty($make_file)){
+                                        if($this->UPDATE){
+                                            $arLoadProductArray = Array(
+                                                "DETAIL_PICTURE"=>$make_file,
+                                            );
+                                            $el_obj = new CIBlockElement;
+                                            $res = $el_obj->Update($data['DATA']['ID'], $arLoadProductArray );
+                                            CopyDirFiles($_SERVER["DOCUMENT_ROOT"]. $full_path, $_SERVER["DOCUMENT_ROOT"].$full_copy_path,true,false,true);
+                                        }
+                                        $mass_success[] ='Большая картинка успешно загружена fid='.$fid;
+                                    }else{
+                                        $mass_error[] = 'Изображение '.$full_path.' не найдено';
+                                    }
+                                }else{
+                                    $mass_error[] = 'Изображение уже есть!';
+                                }
+                            }else{//изображения не главные выносим в отдельный массив
+                                $make_file=CFile::MakeFileArray($_SERVER["DOCUMENT_ROOT"].$full_path);
+                                if(!empty($make_file)){
+                                    $mass_img_more[]=$make_file;
+                                    $mass_img_more_remove[$full_path]=$full_copy_path;
+                                }else{
+                                    $mass_error[] = 'Изображение '.$full_path.' не найдено';
+                                }
+                            }
+
+
+                        }
+                        if(!empty($mass_img_more)){
+                            CIBlockElement::SetPropertyValueCode($data['DATA']['ID'], 'MOREPHOTOS', $mass_img_more);
+                            foreach($mass_img_more_remove as $full_path=>$full_copy_path){
+                                $mass_success[] ='Изображение загружено и перемещено: '.$full_copy_path;
+                                CopyDirFiles($_SERVER["DOCUMENT_ROOT"]. $full_path, $_SERVER["DOCUMENT_ROOT"].$full_copy_path,true,false,true);
+                            }
+                        }
+
+
+
+
+                    }
+
                 }
 
             }
